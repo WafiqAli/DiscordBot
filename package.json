@@ -1,0 +1,20 @@
+{
+  "name": "discordbot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Wafiq Ali",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^12.5.1",
+    "eslint": "^7.16.0",
+    "node": "^15.4.0",
+    "node-fetch": "^2.6.1",
+    "opusscript": "0.0.7",
+    "youtube-search": "^1.1.6",
+    "ytdl-core": "^4.9.0"
+  }
+}
