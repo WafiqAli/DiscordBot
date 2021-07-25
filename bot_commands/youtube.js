@@ -43,13 +43,40 @@ module.exports = {
             message.channel.send({
                 embed : {
                     title: 'YouTube Search and Play: Bot Commands',
-                    description: '"!ytp [video name or link]" -> Searches and lists the first 10 YouTube videos found using your input\n'
-                                + '"!ytp -s" -> Skips the current song being played\n'
-                                + '"!ytp -p" -> Pauses/Plays the current song\n'
-                                + '"!ytp -r" -> Allows you to pick a song to Remove from the Queue\n'
-                                + '"!ytp -d" -> Disconnects the Bot from the voice channel'
+                    description: '**!ytp [video title or link]** -> Main method to link, play or insert a video/song into the queue.\n'
+                                + '**!ytp -q** -> Shows the current songs in the Queue\n'
+                                + '**!ytp -s** -> Skips the current song being played\n'
+                                + '**!ytp -p** -> Pauses/Plays the current song\n'
+                                + '**!ytp -r** -> Allows you to pick a song to Remove from the Queue\n'
+                                + '**!ytp -d** -> Disconnects the Bot from the voice channel'
                 }
             });
+            return;
+        }
+
+        if (args[0] === '-q') {
+            if (server.queue.length == 0) {
+                message.channel.send({
+                    embed: {
+                        title: 'YouTube Search and Play',
+                        description: 'The Queue is Currently Empty!' 
+                    }
+                }).catch(err => console.log(err));
+            }
+            else {
+                let indexNum = 0;
+                let titles = server.queue.map(v => {
+                    indexNum++;
+                    return indexNum + ") " + v.title;
+                });
+                
+                message.channel.send({
+                    embed: {
+                        title: 'YouTube Search and Play: Queue List',
+                        description: titles.join("\n") 
+                    }
+                }).catch(err => console.log(err));
+            }
             return;
         }
 
@@ -171,12 +198,15 @@ module.exports = {
             
             message.channel.send({
                 embed: {
-                    title: 'YouTube Search and Play',
-                    description: 'Type "l" to send the video link or "p" to play the video audio (ensure that you, the caller of this command, are in a voice channel)'
-                }
+                    title: 'YouTube Search and Play - Select an Option:',
+                    description: 'Type "l" to send the video link\n'
+                               + 'Type "p" to play the song OR add it to the Queue\n'
+                               + 'Type "i" to insert the song at a specific position in the Queue\n'
+                               + '**For commands "p" or "i", ensure that you are in a voice channel**'
+                }           
             }).catch(err => console.log(err));
             
-            filter = m => (m.author.id === message.author.id) && (m.content === 'l' || m.content === 'p');
+            filter = m => (m.author.id === message.author.id) && (m.content === 'l' || m.content === 'p' || m.content === 'i');
             authorsMessage = await message.channel.awaitMessages(filter, {max: 1}).catch(err => console.log(err));
 
             const videoData = youtubeResults[videoNum - 1];
@@ -188,6 +218,7 @@ module.exports = {
                     console.log(authorsMessage.first().content);
                     message.channel.send(videoData.link);   
                 }
+
                 else if (authorsMessage.first().content === 'p') {
                     if (!voiceChannel) {
                         message.channel.send({
@@ -196,47 +227,101 @@ module.exports = {
                                 description: 'You need to be in a voice channel in order for me to play audio from the video!'
                             }
                         }).catch(err => console.log(err));
+                        return;
+                    }
+                    PrepareToPlay(videoData, voiceChannel);
+                }
+
+                else if (authorsMessage.first().content === 'i') {
+                    if (!voiceChannel) {
+                        message.channel.send({
+                            embed: {
+                                title: 'YouTube Search and Play',
+                                description: 'You need to be in a voice channel in order for me to play audio from the video!'
+                            }
+                        }).catch(err => console.log(err));
+                        return;
+                    }
+                    
+                    if (server.queue.length == 0) {
+                        message.channel.send({
+                            embed: {
+                                title: 'YouTube Search and Play',
+                                description: 'The Queue is currently empty! Proceeding to append to Queue and Play'
+                            }
+                        }).catch(err => console.log(err));
+
+                        PrepareToPlay(videoData, voiceChannel);
                     }
                     else {
-                        
-                        let server = servers[message.guild.id];
-                        let connection = null;
 
-                        server.queue.push(videoData);
-
-                        const vcMembers = voiceChannel.members;
-                        
-                        isConnected = false;
-                        vcMembers.forEach(member => {
-                            if (member.user.id === '790527522206646303') {
-                                isConnected = true;
-                            }
+                        let indexNum = 0;
+                        let titles = server.queue.map(v => {
+                            indexNum++;
+                            return indexNum + ") " + v.title;
                         });
-                        console.log(isConnected);
+            
+                        message.channel.send({
+                            embed: {
+                                title: 'Please Select a Position in the Queue to add your song at by typing the number and pressing Enter',
+                                description: titles.join("\n")
+                            }
+                        }).catch(err => console.log(err));
                         
-                        if (!isConnected) {
-                            connection = await voiceChannel.join();
-                            server.connection.push(connection);
-                        }
-                        else {
-                            connection = server.connection[0];
-                        }
-                        
-                        if (!server.dispatcher) {
-                            play(connection, message);
-                        }
-                        else {
-                            message.channel.send({
-                                embed: {
-                                    title: 'YouTube Search and Play',
-                                    description: 'Added ' + videoData.title + ' to the queue!' 
-                                }
-                            }).catch(err => console.log(err));
-                        }
+                        let filter = m => (m.author.id === message.author.id) && m.content >= 1 && m.content <= server.queue.length;
+                        let authorsMessage = await message.channel.awaitMessages(filter, {max: 1}).catch(err => console.log(err));
+                        const videoNum = authorsMessage.first().content;
+
+                        server.queue.splice(videoNum - 1, 0, videoData);
+
+                        message.channel.send({
+                            embed: {
+                                title: 'YouTube Search and Play',
+                                description: 'Successfully added: [' + videoData.title + '] at Position {' + videoNum +'} in the Queue!'
+                            }
+                        }).catch(err => console.log(err));
                     }
+                }
+            }
+
+            async function PrepareToPlay(videoData, voiceChannel) {
+                let server = servers[message.guild.id];
+                let connection = null;
+
+                server.queue.push(videoData);
+
+                const vcMembers = voiceChannel.members;
+                
+                isConnected = false;
+                vcMembers.forEach(member => {
+                    if (member.user.id === '790527522206646303') {
+                        isConnected = true;
+                    }
+                });
+                console.log(isConnected);
+                
+                if (!isConnected) {
+                    connection = await voiceChannel.join();
+                    server.connection.push(connection);
+                }
+                else {
+                    connection = server.connection[0];
+                }
+                
+                if (!server.dispatcher) {
+                    play(connection, message);
+                }
+                else {
+                    message.channel.send({
+                        embed: {
+                            title: 'YouTube Search and Play',
+                            description: 'Added ' + videoData.title + ' to the queue!' 
+                        }
+                    }).catch(err => console.log(err));
                 }
             }            
         }
+
 
         function Skip(server, connection) {
             message.channel.send({
@@ -267,7 +352,7 @@ module.exports = {
                 }).catch(err => console.log(err));
                 
                 server.dispatcher = connection.play(stream);
-                
+                server.queue.shift();
             }
             //server.dispatcher = connection.play(stream);
             
@@ -278,19 +363,15 @@ module.exports = {
             });
         }
 
-        
         async function onEnd(connection, message) {
             let server = servers[message.guild.id];
-            //console.log("pog2");
             
-            server.queue.shift();
             playing = false;
-            //server.dispatcher.end();
 
             console.log(server.queue)
             if (server.queue.length != 0) {
-                //console.log(server.dispatcher);
                 play(connection, message);
+
             } else {
                 connection.disconnect();
                 server.dispatcher.destroy();
