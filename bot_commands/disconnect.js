@@ -1,4 +1,4 @@
-module.exports = {
+/*module.exports = {
     name: 'disconnect',
     description: 'Disconnects the bot from a voice channel',
     
@@ -8,3 +8,4 @@ module.exports = {
         return;
     }    
 }
+*/

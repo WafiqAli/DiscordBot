@@ -43,9 +43,9 @@ client.on('message', message => {
         case 'ytp':
             client.bot_commands.get('ytp').execute(message, args);
             break;
-        case 'disconnect':
+        /*case 'disconnect':
             client.bot_commands.get('disconnect').execute(message);
-            break;
+            break;*/
     }
 
 });
