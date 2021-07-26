@@ -49,7 +49,8 @@ module.exports = {
                                 + '**!ytp -s** -> Skips the current song being played\n'
                                 + '**!ytp -p** -> Pauses/Plays the current song\n'
                                 + '**!ytp -r** -> Allows you to pick a song to Remove from the Queue\n'
-                                + '**!ytp -d** -> Disconnects the Bot from the voice channel'
+                                + '**!ytp -d** -> Disconnects the Bot from the voice channel\n\n'
+                                + '**For any voice channel related commands, please ensure that you are in the same voice channel as the Bot (or any if Bot is not connected)**'
                 }
             });
             return;
@@ -57,6 +58,10 @@ module.exports = {
 
         if (args[0] === '-pl' && args[1]) {
             
+            if (!checkMemberInVoiceChannel()) {
+                return;
+            }
+
             let playlist = null;
             try {
                 playlist = await ytpl(args[1]);
@@ -77,7 +82,12 @@ module.exports = {
             });
 
             console.log(server.queue);
-            await checkBotConnection();
+
+            let isConnected = await checkBotConnection();
+            if (!isConnected) {
+                await connectBotToVoiceChannel();
+            }
+
             let connection = server.connection[0];
             
             if (!server.dispatcher) {
@@ -95,6 +105,11 @@ module.exports = {
         }
 
         if (args[0] === '-q') {
+            
+            if (!checkMemberInVoiceChannel()) {
+                return;
+            }
+
             if (server.queue.length == 0) {
                 message.channel.send({
                     embed: {
@@ -121,13 +136,20 @@ module.exports = {
         }
 
         if (args[0] === '-s' && server.dispatcher) {
-            let connection = server.connection[0];
-            Skip(server, connection);
+
+            if (checkMemberInVoiceChannel()) {
+                let connection = server.connection[0];
+                Skip(server, connection);
+            }
             return;
         }
 
         if (args[0] === '-p' && server.dispatcher) {
             
+            if (!checkMemberInVoiceChannel()) {
+                return;
+            }
+
             if (server.dispatcher.paused) {
                 server.dispatcher.resume();
                 
@@ -152,6 +174,10 @@ module.exports = {
         }
 
         if (args[0] === '-r' && server.queue.length != 0) {
+
+            if (!checkMemberInVoiceChannel()) {
+                return;
+            }
 
             let indexNum = 0;
 
@@ -197,6 +223,11 @@ module.exports = {
         }
 
         if (args[0] === '-d' && server.dispatcher) {
+            
+            if (!checkMemberInVoiceChannel()) {
+                return;
+            }
+
             playing = false;
             message.guild.me.voice.channel.leave();
             delete servers[message.guild.id];
@@ -251,7 +282,7 @@ module.exports = {
             authorsMessage = await message.channel.awaitMessages(filter, {max: 1}).catch(err => console.log(err));
 
             const videoData = youtubeResults[videoNum - 1];
-            const voiceChannel = message.member.voice.channel
+            const voiceChannel = message.member.voice.channel;
             
             if (authorsMessage) {
                 if (authorsMessage.first().content === 'l') {
@@ -260,26 +291,15 @@ module.exports = {
                 }
 
                 else if (authorsMessage.first().content === 'p') {
-                    if (!voiceChannel) {
-                        message.channel.send({
-                            embed: {
-                                title: 'YouTube Search and Play',
-                                description: 'You need to be in a voice channel in order for me to play audio from the video!'
-                            }
-                        }).catch(err => console.log(err));
+                    if (!checkMemberInVoiceChannel()) {
                         return;
                     }
+
                     PrepareToPlay(videoData);
                 }
 
                 else if (authorsMessage.first().content === 'i') {
-                    if (!voiceChannel) {
-                        message.channel.send({
-                            embed: {
-                                title: 'YouTube Search and Play',
-                                description: 'You need to be in a voice channel in order for me to play audio from the video!'
-                            }
-                        }).catch(err => console.log(err));
+                    if (!checkMemberInVoiceChannel()) {
                         return;
                     }
                     
@@ -323,6 +343,22 @@ module.exports = {
                     }
                 }
             }
+        } 
+
+        function checkMemberInVoiceChannel() {
+            const voiceChannel = message.member.voice.channel;
+
+            if (!voiceChannel || !checkBotConnection()) {
+                message.channel.send({
+                    embed: {
+                        title: 'YouTube Search and Play',
+                        description: 'You need to be in the same voice channel as the Bot to issue this command!'
+                    }
+                }).catch(err => console.log(err));
+                return false;
+            }
+
+            return true;
         }
 
         async function PrepareToPlay(videoData) {
@@ -331,7 +367,10 @@ module.exports = {
 
             server.queue.push(videoData);
             
-            await checkBotConnection();
+            let isConnected = await checkBotConnection();
+            if (!isConnected) {
+                await connectBotToVoiceChannel();
+            }
             connection = server.connection[0];
 
             if (!server.dispatcher) {
@@ -348,9 +387,7 @@ module.exports = {
         }            
 
         async function checkBotConnection() {
-            const voiceChannel = message.member.voice.channel
-            let server = servers[message.guild.id];
-            
+            const voiceChannel = message.member.voice.channel            
             const vcMembers = voiceChannel.members;
             
             isConnected = false;
@@ -359,12 +396,15 @@ module.exports = {
                     isConnected = true;
                 }
             });
-            console.log(isConnected);
-            
-            if (!isConnected) {
-                connection = await voiceChannel.join();
-                server.connection.push(connection);
-            }
+
+            return isConnected;
+        }
+
+        async function connectBotToVoiceChannel() {
+            const voiceChannel = message.member.voice.channel 
+            let server = servers[message.guild.id];
+            let connection = await voiceChannel.join();
+            server.connection.push(connection);
         }
 
         function Skip(server, connection) {
