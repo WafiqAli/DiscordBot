@@ -5,7 +5,7 @@ module.exports = {
     description: 'Fetches cat facts from an API that can give random cat facts',
     
     execute(message, args) {
-        const fetchPromise = fetch("https://cat-fact.herokuapp.com/facts/random", 
+        const fetchPromise = fetch("https://catfact.ninja/fact", 
         {
             headers : {
                 Accept: "application/json",
@@ -13,6 +13,6 @@ module.exports = {
         });
         
         const streamPromise = fetchPromise.then((response) => response.json());
-        streamPromise.then((data) => message.channel.send(data.text));
+        streamPromise.then((data) => message.channel.send(data.fact));
     }    
 }
