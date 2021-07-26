@@ -1,6 +1,7 @@
 const Discord = require('discord.js');
 const search = require('youtube-search');
 const ytdl = require('ytdl-core');
+const ytpl = require('ytpl');
 const tokens = require('../tokens');
 
 const YOUTUBE_API_KEY = tokens.youtubeTokenAPI;
@@ -37,13 +38,13 @@ module.exports = {
             }
         }
         let server = servers[message.guild.id];
-        let connection = server.connection[0];
 
         if (args[0] === '-help') {
             message.channel.send({
                 embed : {
                     title: 'YouTube Search and Play: Bot Commands',
                     description: '**!ytp [video title or link]** -> Main method to link, play or insert a video/song into the queue.\n'
+                                + '**!ytp -pl [playlist url/link]** -> Adds all songs from the given playlist into the Queue.\n'
                                 + '**!ytp -q** -> Shows the current songs in the Queue\n'
                                 + '**!ytp -s** -> Skips the current song being played\n'
                                 + '**!ytp -p** -> Pauses/Plays the current song\n'
@@ -51,6 +52,45 @@ module.exports = {
                                 + '**!ytp -d** -> Disconnects the Bot from the voice channel'
                 }
             });
+            return;
+        }
+
+        if (args[0] === '-pl' && args[1]) {
+            
+            let playlist = null;
+            try {
+                playlist = await ytpl(args[1]);
+            } catch (err) {
+                message.channel.send({
+                    embed: {
+                        title: 'YouTube Search and Play: ERROR',
+                        description: 'Invalid Playlist Link!' 
+                    }
+                }).catch(err => console.log(err));
+                return;
+            }
+            
+            playlist.items.forEach(item => {
+                item.link = item.shortUrl;
+                delete item.shortUrl;
+                server.queue.push(item);
+            });
+
+            console.log(server.queue);
+            await checkBotConnection();
+            let connection = server.connection[0];
+            
+            if (!server.dispatcher) {
+                play(connection, message);
+            }
+
+            message.channel.send({
+                embed: {
+                    title: 'YouTube Search and Play',
+                    description: 'Added Playlist with {' + playlist.items.length + '} songs to the queue!' 
+                }
+            }).catch(err => console.log(err));
+            
             return;
         }
 
@@ -81,6 +121,7 @@ module.exports = {
         }
 
         if (args[0] === '-s' && server.dispatcher) {
+            let connection = server.connection[0];
             Skip(server, connection);
             return;
         }
@@ -210,7 +251,6 @@ module.exports = {
             authorsMessage = await message.channel.awaitMessages(filter, {max: 1}).catch(err => console.log(err));
 
             const videoData = youtubeResults[videoNum - 1];
-
             const voiceChannel = message.member.voice.channel
             
             if (authorsMessage) {
@@ -229,7 +269,7 @@ module.exports = {
                         }).catch(err => console.log(err));
                         return;
                     }
-                    PrepareToPlay(videoData, voiceChannel);
+                    PrepareToPlay(videoData);
                 }
 
                 else if (authorsMessage.first().content === 'i') {
@@ -251,7 +291,7 @@ module.exports = {
                             }
                         }).catch(err => console.log(err));
 
-                        PrepareToPlay(videoData, voiceChannel);
+                        PrepareToPlay(videoData);
                     }
                     else {
 
@@ -283,45 +323,49 @@ module.exports = {
                     }
                 }
             }
-
-            async function PrepareToPlay(videoData, voiceChannel) {
-                let server = servers[message.guild.id];
-                let connection = null;
-
-                server.queue.push(videoData);
-
-                const vcMembers = voiceChannel.members;
-                
-                isConnected = false;
-                vcMembers.forEach(member => {
-                    if (member.user.id === '790527522206646303') {
-                        isConnected = true;
-                    }
-                });
-                console.log(isConnected);
-                
-                if (!isConnected) {
-                    connection = await voiceChannel.join();
-                    server.connection.push(connection);
-                }
-                else {
-                    connection = server.connection[0];
-                }
-                
-                if (!server.dispatcher) {
-                    play(connection, message);
-                }
-                else {
-                    message.channel.send({
-                        embed: {
-                            title: 'YouTube Search and Play',
-                            description: 'Added ' + videoData.title + ' to the queue!' 
-                        }
-                    }).catch(err => console.log(err));
-                }
-            }            
         }
 
+        async function PrepareToPlay(videoData) {
+            let server = servers[message.guild.id];
+            let connection = null;
+
+            server.queue.push(videoData);
+            
+            await checkBotConnection();
+            connection = server.connection[0];
+
+            if (!server.dispatcher) {
+                play(connection, message);
+            }
+            else {
+                message.channel.send({
+                    embed: {
+                        title: 'YouTube Search and Play',
+                        description: 'Added ' + videoData.title + ' to the queue!' 
+                    }
+                }).catch(err => console.log(err));
+            }
+        }            
+
+        async function checkBotConnection() {
+            const voiceChannel = message.member.voice.channel
+            let server = servers[message.guild.id];
+            
+            const vcMembers = voiceChannel.members;
+            
+            isConnected = false;
+            vcMembers.forEach(member => {
+                if (member.user.id === '790527522206646303') {
+                    isConnected = true;
+                }
+            });
+            console.log(isConnected);
+            
+            if (!isConnected) {
+                connection = await voiceChannel.join();
+                server.connection.push(connection);
+            }
+        }
 
         function Skip(server, connection) {
             message.channel.send({
@@ -339,7 +383,7 @@ module.exports = {
             let server = servers[message.guild.id];
             
             const stream = ytdl(server.queue[0].link, {filter : 'audioonly'});
-            
+            console.log(server.queue[0].link);
             if (!playing) {
                 console.log(playing);
                 playing = true;
