@@ -61,12 +61,12 @@ module.exports = {
                     description: '**!ytp [video title or link]** -> Main method to link, play or insert a video/song into the queue.\n'
                                 + '**!ytp -pl [playlist url/link]** -> Adds all songs from the given playlist into the Queue.\n'
                                 + '**!ytp -pl [playlist url/link] -shuffle** -> Shuffles and Adds all songs from the given playlist into the Queue.\n'
-                                + '**!ytp -shuffle** -> Shuffles the entire Queue\n'
-                                + '**!ytp -q** -> Shows the current songs in the Queue\n'
-                                + '**!ytp -s** -> Skips the current song being played\n'
-                                + '**!ytp -p** -> Pauses/Plays the current song\n'
-                                + '**!ytp -r** -> Allows you to pick a song to Remove from the Queue\n'
-                                + '**!ytp -d** -> Disconnects the Bot from the voice channel\n\n'
+                                + '**!ytp -shuffle** -> Shuffles the entire Queue.\n'
+                                + '**!ytp -q** -> Shows the current songs in the Queue.\n'
+                                + '**!ytp -s** -> Skips the current song being played.\n'
+                                + '**!ytp -p** -> Pauses/Plays the current song.\n'
+                                + '**!ytp -r** -> Allows you to pick a song to Remove from the Queue.\n'
+                                + '**!ytp -d** -> Disconnects the Bot from the voice channel.\n\n'
                                 + '**For any voice channel related commands, please ensure that you are in the same voice channel as the Bot (or any if Bot is not connected)**'
                 }
             });
