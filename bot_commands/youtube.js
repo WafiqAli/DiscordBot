@@ -5,8 +5,10 @@
 *
 * @description : 
 * This file is used to execute a discord command that allows users to
-* to stream audio from YouTube videos and YouTube Playlists in a voice channel. Users are also 
-* able to search and output links to YouTube videos from the Top 10 search results from their search criteria (input).
+* to stream audio from YouTube videos and YouTube Playlists in a voice channel. 
+* Users are able to choose a song from the Top 10 search results using their input search criteria.
+* Most typical audio manipulation functionalities are implemented for this feature
+* These are: Play, Pause, Skip, Shuffle, Insert, Remove, Play Playlists...
 **/
 
 const Discord = require('discord.js');
@@ -58,6 +60,8 @@ module.exports = {
                     title: 'YouTube Search and Play: Bot Commands',
                     description: '**!ytp [video title or link]** -> Main method to link, play or insert a video/song into the queue.\n'
                                 + '**!ytp -pl [playlist url/link]** -> Adds all songs from the given playlist into the Queue.\n'
+                                + '**!ytp -pl [playlist url/link] -shuffle** -> Shuffles and Adds all songs from the given playlist into the Queue.\n'
+                                + '**!ytp -shuffle** -> Shuffles the entire Queue\n'
                                 + '**!ytp -q** -> Shows the current songs in the Queue\n'
                                 + '**!ytp -s** -> Skips the current song being played\n'
                                 + '**!ytp -p** -> Pauses/Plays the current song\n'
@@ -89,6 +93,10 @@ module.exports = {
                 return;
             }
             
+            if (args[2] === '-shuffle') {      // executed if user typed '-shuffle' after their playlist url link (only shuffles the playlist, not the current queue)
+                playlist.items = ShufflePlaylist(playlist.items);
+            }
+
             playlist.items.forEach(item => {       // adds every item to queue
                 item.link = item.shortUrl;
                 delete item.shortUrl;              // Renaming a key from 'shortUrl' to 'link' to make my life easier later on
@@ -147,6 +155,21 @@ module.exports = {
                     }
                 }).catch(err => console.log(err));
             }
+            return;
+        }
+
+        /* SHUFFLE QUEUE COMMAND: Shuffles the current Queue for the server */
+        if (args[0] === '-shuffle') {
+            if (server.queue.length == 0) {
+                message.channel.send({
+                    embed: {
+                        title: 'YouTube Search and Play',
+                        description: 'The Queue is Currently Empty!' 
+                    }
+                }).catch(err => console.log(err));
+                return;
+            }
+            ShuffleQueue();
             return;
         }
 
@@ -437,6 +460,60 @@ module.exports = {
             server.connection.push(connection);
         }
 
+        /* Function ShufflePlaylist() shuffles a given playlist before being added to the current queue.
+        *
+        *  @params -> {playlistItems} Datastructure that holds information for every video in the playlist.
+        *  @return -> {shuffledPlaylist} Array where each element is an object that holds information about a video.  
+        **/
+        function ShufflePlaylist(playlistItems) {
+            let shuffledPlaylist = [];
+            let range = playlistItems.length;
+
+            while (playlistItems.length != 0) {
+                let randNum = Math.floor(Math.random() * range);
+                shuffledPlaylist.push(playlistItems[randNum]);
+                playlistItems.splice(randNum, 1);
+                range--;
+            }
+
+            message.channel.send({
+                embed: {
+                    title: 'YouTube Search and Play',
+                    description: 'Playlist Shuffled!' 
+                }
+            }).catch(err => console.log(err));
+
+            return shuffledPlaylist;
+        }   
+
+        /* Function ShuffleQueue() shuffles the entire queue.
+        *
+        *  @params -> None
+        *  @return -> None
+        **/
+        function ShuffleQueue() {
+            let server = servers[message.guild.id];
+            let range = server.queue.length;
+            let newQueue = [];
+
+            while (server.queue.length != 0) {
+                let randNum = Math.floor(Math.random() * range);
+                newQueue.push(server.queue[randNum]);
+                server.queue.splice(randNum, 1);
+                range--;
+            }
+            server.queue = newQueue;
+
+            message.channel.send({
+                embed: {
+                    title: 'YouTube Search and Play',
+                    description: 'Queue Shuffled!' 
+                }
+            }).catch(err => console.log(err));
+
+            return;
+        }
+
         /* Function Skip() is called to skip the current song being played by calling OnEnd() function.
         *
         *  @params -> {server} Datastructure that holds the queue, connection and dispatcher objects
@@ -477,7 +554,7 @@ module.exports = {
                     }
                 }).catch(err => console.log(err));
                 
-                server.dispatcher = connection.Play(stream);
+                server.dispatcher = connection.play(stream);
                 server.queue.shift();
             }
 
