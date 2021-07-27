@@ -26,7 +26,7 @@ const options = {
 }
 
 let servers = {};
-let playing = false;        // Used to indicate whether the streamDispatcher (server.dispatcher) is currently streaming audio to a voice channel
+      
 
 module.exports = {
     name: 'ytp',
@@ -49,6 +49,7 @@ module.exports = {
             servers[message.guild.id] = {
                 queue : [],                     // Datastructure where each element is a video Object that includes information such as title, url/link, etc.
                 connection: [],
+                playing : false,                // Used to indicate whether the streamDispatcher (server.dispatcher) is currently streaming audio to a voice channel
             }
         }
         let server = servers[message.guild.id];
@@ -258,7 +259,7 @@ module.exports = {
                 return;
             }
 
-            playing = false;
+            server.playing = false;
             message.guild.me.voice.channel.leave();  // Disconnects from voice channel
             delete servers[message.guild.id];       // Removes a server from the list of servers. When the bot is used again, it will add the server back.
 
@@ -538,14 +539,14 @@ module.exports = {
         *  @params -> {message} variable from main.js. Holds lots of valuable information
         *  @return -> None  
         **/
-        async function Play(connection, message) {
+        function Play(connection, message) {
             let server = servers[message.guild.id];
             
             const stream = ytdl(server.queue[0].link, {filter : 'audioonly'});
             console.log(server.queue[0].link);
-            if (!playing) {
-                console.log(playing);
-                playing = true;
+            if (!server.playing) {
+                console.log(server.playing);
+                server.playing = true;
                 
                 message.channel.send({
                     embed: {
@@ -572,7 +573,7 @@ module.exports = {
         async function OnEnd(connection, message) {
             let server = servers[message.guild.id];
             
-            playing = false;
+            server.playing = false;
 
             console.log(server.queue)
             if (server.queue.length != 0) {
