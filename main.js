@@ -34,6 +34,9 @@ client.on('message', message => {
     var servers = {};
 
     switch(command) {
+        case 'help': 
+            client.bot_commands.get('help').execute(message, args);
+            break;
         case 'ping':
             client.bot_commands.get('ping').execute(message, args);
             break;
