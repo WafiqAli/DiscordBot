@@ -37,12 +37,16 @@ client.on('message', message => {
         case 'ping':
             client.bot_commands.get('ping').execute(message, args);
             break;
+        case 'cat':
+            client.bot_commands.get('cat').execute(message, args);
+            break;
         case 'catfact':
             client.bot_commands.get('catfact').execute(message, args);
             break;
         case 'ytp':
             client.bot_commands.get('ytp').execute(message, args);
             break;
+        
         /*case 'disconnect':
             client.bot_commands.get('disconnect').execute(message);
             break;*/
