@@ -49,7 +49,10 @@ module.exports = {
             servers[message.guild.id] = {
                 queue : [],                     // Datastructure where each element is a video Object that includes information such as title, url/link, etc.
                 connection: [],
-                playing : false,                // Used to indicate whether the streamDispatcher (server.dispatcher) is currently streaming audio to a voice channel
+                currentSong: null,
+                playing: false,                // Used to indicate whether the streamDispatcher (server.dispatcher) is currently streaming audio to a voice channel
+                //replayQueue: false,
+                replaySingle: false,
             }
         }
         let server = servers[message.guild.id];
@@ -63,6 +66,7 @@ module.exports = {
                                 + '**!ytp -pl [playlist url/link]** -> Adds all songs from the given playlist into the Queue.\n'
                                 + '**!ytp -pl [playlist url/link] -shuffle** -> Shuffles and Adds all songs from the given playlist into the Queue.\n'
                                 + '**!ytp -shuffle** -> Shuffles the entire Queue.\n'
+                                + '**!ytp -rs** -> Turns on/off Replay Single Mode which continuously replays the current song being played.\n'
                                 + '**!ytp -q** -> Shows the current songs in the Queue.\n'
                                 + '**!ytp -s** -> Skips the current song being played.\n'
                                 + '**!ytp -p** -> Pauses/Plays the current song.\n'
@@ -174,6 +178,78 @@ module.exports = {
             return;
         }
 
+        /* REPLAY SINGLE COMMAND: Replays the current song over and over again until this mode is turned off */
+        if (args[0] === '-rs') {
+            if (!(await CheckMemberInVoiceChannel())) {
+                return;
+            }
+
+            if (!server.dispatcher) {
+                message.channel.send({
+                    embed: {
+                        title: 'YouTube Search and Play',
+                        description: 'Unable to replay. No audio is currently being streamed!' 
+                    }
+                }).catch(err => console.log(err));
+                return;
+            }
+
+            if (!server.replaySingle) {
+                server.replaySingle = true;
+                message.channel.send({
+                    embed: {
+                        title: 'YouTube Search and Play',
+                        description: 'Replay Single is Turned On! [' + server.currentSong.title + '] will continuously replay' 
+                    }
+                }).catch(err => console.log(err));
+            }
+            else {
+                server.replaySingle = false;
+                message.channel.send({
+                    embed: {
+                        title: 'YouTube Search and Play',
+                        description: 'Replay Single is Turned Off!' 
+                    }
+                }).catch(err => console.log(err));
+            }
+            
+            return;
+        }
+        /*
+        if (args[0] === '-rall') {
+            if (!(await CheckMemberInVoiceChannel())) {
+                return;
+            }
+
+            if (!server.dispatcher) {
+                message.channel.send({
+                    embed: {
+                        title: 'YouTube Search and Play',
+                        description: 'Unable to replay. No audio is currently being streamed!' 
+                    }
+                }).catch(err => console.log(err));
+                return;
+            }
+            if (!server.queue.length == 0) {
+                message.channel.send({
+                    embed: {
+                        title: 'YouTube Search and Play',
+                        description: 'Unable to replay. Queue is Empty! Use "!ytp -rs" to replay current song instead' 
+                    }
+                }).catch(err => console.log(err));
+                return;
+            }
+
+            if (!server.replayQueue) {
+                server.replayQueue = true;
+            }
+            else {
+                server.replayQueue = false;
+            }
+            
+            return;
+        }*/
+
         /* SKIP CURRENT SONG COMMAND: Skips the current song that is playing and plays the next one in the queue */
         if (args[0] === '-s' && server.dispatcher) {
 
@@ -193,7 +269,6 @@ module.exports = {
 
             if (server.dispatcher.paused) {
                 server.dispatcher.resume();
-                
                 message.channel.send({
                     embed: {
                         title: 'YouTube Search and Play',
@@ -203,7 +278,6 @@ module.exports = {
             }
             else {
                 server.dispatcher.pause();
-
                 message.channel.send({
                     embed: {
                         title: 'YouTube Search and Play',
@@ -525,7 +599,7 @@ module.exports = {
             message.channel.send({
                 embed: {
                     title: 'YouTube Search and Play',
-                    description: 'Skipping: [' + server.queue[0].title + ']' 
+                    description: 'Skipping: [' + server.currentSong.title + ']' 
                 }
             }).catch(err => console.log(err));
 
@@ -543,9 +617,8 @@ module.exports = {
             let server = servers[message.guild.id];
             
             const stream = ytdl(server.queue[0].link, {filter : 'audioonly'});
-            console.log(server.queue[0].link);
+    
             if (!server.playing) {
-                console.log(server.playing);
                 server.playing = true;
                 
                 message.channel.send({
@@ -556,7 +629,7 @@ module.exports = {
                 }).catch(err => console.log(err));
                 
                 server.dispatcher = connection.play(stream);
-                server.queue.shift();
+                server.currentSong = server.queue.shift();
             }
 
             server.dispatcher.on("finish", () => {
@@ -575,8 +648,11 @@ module.exports = {
             
             server.playing = false;
 
-            console.log(server.queue)
-            if (server.queue.length != 0) {
+            if (server.replaySingle) {
+                server.queue.unshift(server.currentSong);
+                Play(connection, message);
+            }
+            else if (server.queue.length != 0) {
                 Play(connection, message);
 
             } else {
