@@ -11,7 +11,7 @@ module.exports = {
                             + '**!cat** -> Sends a random image or gif of a cat.\n'
                             + '**!catfact** -> Sends a random fact about cats.\n'
                             + '**!ytp** -> You can stream audio from YouTube videos and playlists using: YouTube Search and Play.\n'
-                            + '**!bored** -> Sends you an activity to do if you are bored.'
+                            + '**!bored** -> Sends you a random activity to do if you are bored.'
             }
         });
         return;
