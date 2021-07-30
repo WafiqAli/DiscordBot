@@ -51,7 +51,11 @@ client.on('message', message => {
             break;
         case 'bored':
             client.bot_commands.get('bored').execute(message, args);
-        
+            break;
+        case 'translate':
+            client.bot_commands.get('translate').execute(message, args);
+            break;
+            
         /*case 'disconnect':
             client.bot_commands.get('disconnect').execute(message);
             break;*/
