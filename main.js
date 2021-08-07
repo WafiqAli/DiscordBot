@@ -40,6 +40,9 @@ client.on('message', message => {
         case 'ping':
             client.bot_commands.get('ping').execute(message, args);
             break;
+        case 'dog':
+            client.bot_commands.get('dog').execute(message, args);
+            break;
         case 'cat':
             client.bot_commands.get('cat').execute(message, args);
             break;
