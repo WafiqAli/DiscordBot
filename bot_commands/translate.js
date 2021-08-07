@@ -1,7 +1,7 @@
 /* API Endpoint: https://api.funtranslations.com/ */
 const fetch = require('node-fetch');
 
-const translators = { 
+const translators = { // An object that stores the endpoints (value) for each language (key). 
     Pirate: '/translate/pirate',
     Minion: '/translate/minion',
     Shakespeare: '/translate/shakespeare',
@@ -19,7 +19,7 @@ const translators = {
     Morse: '/translate/morse',
     Morse_To_English: '/translate/morse2english'
 };
-const langArray = Object.keys(translators);
+const langArray = Object.keys(translators); // an array with the keys in the 'translators' object.
 
 module.exports = {
     name: 'translate',
@@ -31,7 +31,7 @@ module.exports = {
         message.channel.send({
             embed: {
                 title: 'Fun Translator',
-                description: 'Please type in the text to be translated'
+                description: 'Please type in the text to be translated\n\nNOTE: ONLY FIVE TRANSLATION REQUESTS ARE ALLOWED PER DAY (RATE LIMITED DUE TO FREE VERSION)!'
             }
         }).catch(err => console.log(err));
 
@@ -41,6 +41,7 @@ module.exports = {
         console.log(inputText);
 
 
+        /* Prints out a numbered list of languages available to translate to */
         let listNum = 0;
         let languages = langArray.map(l => {
             listNum++;

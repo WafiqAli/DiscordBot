@@ -12,6 +12,7 @@ module.exports = {
                             + '**!catfact** -> Sends a random fact about cats.\n'
                             + '**!ytp** -> You can stream audio from YouTube videos and playlists using: YouTube Search and Play.\n'
                             + '**!bored** -> Sends you a random activity to do if you are bored.'
+                            + '**!translate** -> Translate text into a variety of different fictional languages and morse code.'
             }
         });
         return;
