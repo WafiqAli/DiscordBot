@@ -8,7 +8,7 @@ module.exports = {
             embed : {
                 title: 'Bot Commands:',
                 description: '**!ping** -> Pong?!.\n'
-                            + '**!dog** -> Sends a random image a dog.\n'   
+                            + '**!dog** -> Sends a random image of a dog.\n'   
                             + '**!cat** -> Sends a random image or gif of a cat.\n'
                             + '**!catfact** -> Sends a random fact about cats.\n'
                             + '**!ytp** -> You can stream audio from YouTube videos and playlists using: YouTube Search and Play.\n'
