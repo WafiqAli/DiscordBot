@@ -39,5 +39,5 @@ There are currently 8 commands that this discord bot is able to execute. All com
 
 ## Help
 
-More information and documentation about Discord.js can be found [here](https://discord.js.org/#/)
+More information and documentation about Discord.js can be found [here](https://discord.js.org/#/)  
 Detailed Guide for Discord.js can be found [here](https://discordjs.guide/)
